@@ -67,7 +67,14 @@ const GeminiLiveOverlay: React.FC<Props> = ({ onClose }) => {
   const startSession = async () => {
     try {
       setStatus('Connecting to AI...');
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+      
+      const apiKey = typeof process !== 'undefined' ? process.env.API_KEY : '';
+      if (!apiKey) {
+        setStatus('API Key missing');
+        return;
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
       
       const inputCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
       const outputCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
@@ -151,7 +158,6 @@ const GeminiLiveOverlay: React.FC<Props> = ({ onClose }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-indigo-950/90 backdrop-blur-md p-6">
       <div className="bg-white rounded-3xl w-full max-w-md p-8 text-center shadow-2xl relative overflow-hidden">
-        {/* Animated Background Pulse */}
         <div className={`absolute inset-0 bg-gradient-to-br from-indigo-50 to-purple-50 transition-opacity duration-1000 ${isActive ? 'opacity-100' : 'opacity-0'}`}></div>
         
         <div className="relative z-10">

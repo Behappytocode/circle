@@ -14,19 +14,32 @@
         ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
     </style>
+    <script>
+      // Shim process.env for browser compatibility
+      window.process = {
+        env: {
+          API_KEY: '',
+          SUPABASE_URL: 'https://hnfwuvqwjzsiwjvfjolx.supabase.co',
+          SUPABASE_ANON_KEY: ''
+        }
+      };
+    </script>
 <script type="importmap">
 {
   "imports": {
-    "react/": "https://esm.sh/react@^19.2.4/",
-    "react": "https://esm.sh/react@^19.2.4",
+    "react": "https://esm.sh/react@19.2.4",
+    "react-dom": "https://esm.sh/react-dom@19.2.4",
+    "react-dom/client": "https://esm.sh/react-dom@19.2.4/client",
+    "@google/genai": "https://esm.sh/@google/genai@1.41.0",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.48.1",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.41.0",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.95.3"
+    "react/": "https://esm.sh/react@^19.2.4/"
   }
 }
 </script>
 </head>
 <body>
     <div id="root"></div>
+    <script type="module" src="index.tsx"></script>
 </body>
 </html>
