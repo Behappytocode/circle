@@ -1,0 +1,9 @@
+{
+  "name": "Circle - Secure Friends Chat",
+  "description": "A high-security, real-time chat application for private circles with admin approval, rich media sharing, voice notes, and integrated Gemini Live AI conversation capabilities.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}
