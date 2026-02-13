@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabase';
 import { Profile } from './types';
 import AuthView from './components/AuthView';
@@ -11,30 +11,40 @@ const App: React.FC = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isConfigured, setIsConfigured] = useState(true);
+  const keyInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // Check if the supabase client is using a placeholder key
     const checkConfig = async () => {
-      const key = localStorage.getItem('supabase_anon_key') || (window as any)._env_?.SUPABASE_ANON_KEY;
-      if (!key || key === 'your-anon-key') {
+      try {
+        const key = localStorage.getItem('supabase_anon_key') || (window as any)._env_?.SUPABASE_ANON_KEY;
+        if (!key || key === 'your-anon-key' || key === '') {
+          setIsConfigured(false);
+          setLoading(false);
+          return;
+        }
+
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        setSession(currentSession);
+        if (currentSession) {
+          fetchProfile(currentSession.user.id);
+        } else {
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Configuration check failed:", err);
         setIsConfigured(false);
         setLoading(false);
-        return;
       }
-
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        setSession(session);
-        if (session) fetchProfile(session.user.id);
-        else setLoading(false);
-      });
     };
 
     checkConfig();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session) fetchProfile(session.user.id);
-      else {
+      if (session) {
+        fetchProfile(session.user.id);
+      } else {
         setProfile(null);
         setLoading(false);
       }
@@ -44,22 +54,28 @@ const App: React.FC = () => {
   }, []);
 
   const fetchProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-    if (error) {
-      console.error('Error fetching profile:', error);
-    } else {
-      setProfile(data);
+      if (error) {
+        console.error('Error fetching profile:', error);
+      } else {
+        setProfile(data);
+      }
+    } catch (err) {
+      console.error('Profile fetch failed:', err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const handleSaveKey = (key: string) => {
-    if (!key.trim()) return;
+  const handleSaveKey = () => {
+    const key = keyInputRef.current?.value;
+    if (!key || !key.trim()) return;
     localStorage.setItem('supabase_anon_key', key.trim());
     window.location.reload();
   };
@@ -84,7 +100,9 @@ const App: React.FC = () => {
                 <span className="w-5 h-5 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-[10px]">1</span>
                 Initialize Database
               </h3>
-              <p className="text-xs text-slate-500 leading-relaxed">Run the <code className="bg-white px-1 border rounded font-mono">setup.sql</code> script in your project's SQL Editor to create tables.</p>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Run the <code className="bg-white px-1 border rounded font-mono text-[10px]">setup.sql</code> script in your project's SQL Editor.
+              </p>
             </div>
             
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
@@ -92,25 +110,25 @@ const App: React.FC = () => {
                 <span className="w-5 h-5 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-[10px]">2</span>
                 Retrieve API Key
               </h3>
-              <p className="text-xs text-slate-500 leading-relaxed">Copy the <span className="font-bold text-slate-700">anon public</span> key from <strong>Project Settings -> API</strong>.</p>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Copy the <span className="font-bold text-slate-700">anon public</span> key from <strong>Project Settings &rarr; API</strong>.
+              </p>
             </div>
           </div>
 
           <div className="space-y-4">
             <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Supabase Anon Key</label>
             <input 
+              ref={keyInputRef}
               type="password" 
               placeholder="eyJhbGciOiJIUzI1NiIsInR5..." 
               className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition text-sm font-mono"
               onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSaveKey((e.target as HTMLInputElement).value);
+                if (e.key === 'Enter') handleSaveKey();
               }}
             />
             <button 
-              onClick={(e) => {
-                const input = e.currentTarget.previousSibling as HTMLInputElement;
-                handleSaveKey(input.value);
-              }}
+              onClick={handleSaveKey}
               className="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 active:scale-95"
             >
               Finish Setup
@@ -118,7 +136,7 @@ const App: React.FC = () => {
           </div>
           
           <p className="mt-6 text-center text-[10px] text-gray-400">
-            <i className="fas fa-lock mr-1"></i> Your key is stored locally in your browser and never shared.
+            <i className="fas fa-lock mr-1"></i> Key is stored locally and never shared.
           </p>
         </div>
       </div>
